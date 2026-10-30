@@ -1,0 +1,8 @@
+{
+  "name": "reminder-api",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "ioredis": "^5.4.1"
+  }
+}
