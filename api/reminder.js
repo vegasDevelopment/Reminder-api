@@ -15,6 +15,16 @@ function parseTR(input) {
 }
 
 export default async function handler(req, res) {
+  // CORS İZİNLERİ (Tarayıcı için)
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
+
+  // Tarayıcının ön kontrol isteğini onayla
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.headers['x-api-key'] !== process.env.API_KEY)
     return res.status(401).json({ error: 'unauthorized' });
 
@@ -22,7 +32,7 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const { content, eventDate, remindDaysBefore } = req.body || {};
     if (!content || !eventDate || !Array.isArray(remindDaysBefore))
-      return res.status(400).json({ error: 'content, eventDate, remindDaysBefore gerekli' });
+      return res.status(400).json({ error: 'Eksik bilgi gönderdiniz.' });
 
     let date;
     try { date = parseTR(eventDate); }
@@ -31,17 +41,23 @@ export default async function handler(req, res) {
     const id = crypto.randomUUID();
     const reminder = { id, content, eventDate: date.toISOString(), remindDaysBefore, status: 'active' };
     
-    // Valkey'de hash olarak saklıyoruz
-    await valkey.hset(KEY, id, JSON.stringify(reminder));
-    
-    return res.json(reminder);
+    try {
+      await valkey.hset(KEY, id, JSON.stringify(reminder));
+      return res.json(reminder);
+    } catch (err) {
+      return res.status(500).json({ error: 'Valkey bağlantı hatası: ' + err.message });
+    }
   }
 
   // SİL
   if (req.method === 'DELETE') {
     if (!req.query.id) return res.status(400).json({ error: 'id gerekli' });
-    await valkey.hdel(KEY, req.query.id);
-    return res.json({ ok: true });
+    try {
+      await valkey.hdel(KEY, req.query.id);
+      return res.json({ ok: true });
+    } catch (err) {
+      return res.status(500).json({ error: 'Valkey hatası: ' + err.message });
+    }
   }
 
   return res.status(405).json({ error: 'method not allowed' });
