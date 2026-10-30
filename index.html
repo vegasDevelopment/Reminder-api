@@ -16,9 +16,6 @@
 <body>
     <div class="container">
         <h2>Yeni Hatırlatıcı</h2>
-        
-        <label>API Key (Gizli Anahtarın)</label>
-        <input type="password" id="apiKey" placeholder="Örn: Reminder301">
 
         <label>Konu</label>
         <input type="text" id="content" placeholder="Örn: Matematik Sınavı">
@@ -39,20 +36,21 @@
         const API_URL = "https://reminder-api-psi.vercel.app";
 
         async function ekle() {
-            const key = document.getElementById('apiKey').value;
             const content = document.getElementById('content').value;
             const eventDate = document.getElementById('eventDate').value;
             const remindDays = document.getElementById('remindDays').value.split(',').map(n => parseInt(n.trim()));
 
             const res = await fetch(API_URL + "/api/reminder", {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-api-key': key },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ content, eventDate, remindDaysBefore: remindDays })
             });
 
             const data = await res.json();
             if(res.ok) {
                 alert("Başarıyla eklendi!");
+                document.getElementById('content').value = ""; // İşlem bitince kutuyu temizle
+                document.getElementById('eventDate').value = "";
                 listele();
             } else {
                 alert("Hata: " + (data.error || "Bilinmeyen hata"));
@@ -60,15 +58,12 @@
         }
 
         async function listele() {
-            const key = document.getElementById('apiKey').value;
-            const res = await fetch(API_URL + "/api/query", {
-                headers: { 'x-api-key': key }
-            });
+            const res = await fetch(API_URL + "/api/query");
             const data = await res.json();
             
             const sonucDiv = document.getElementById('sonuc');
             if(!res.ok) {
-                sonucDiv.innerHTML = "<p style='color:red'>Hata: Anahtar yanlış olabilir.</p>";
+                sonucDiv.innerHTML = "<p style='color:red'>Hata: Veriler çekilemedi.</p>";
                 return;
             }
 
