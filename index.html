@@ -72,12 +72,32 @@
                 return;
             }
 
+            // Her satıra sil butonu ve esnek (flex) düzen eklendi
             sonucDiv.innerHTML = data.map(r => `
-                <div style="background:#333; padding:10px; margin-bottom:5px; border-radius:5px; border-left: 4px solid ${r.isDueToday ? 'red' : '#5865F2'}">
-                    <b>${r.content}</b><br>
-                    <small>${new Date(r.eventDate).toLocaleDateString('tr-TR')} (${r.daysLeft} gün kaldı)</small>
+                <div style="background:#333; padding:10px; margin-bottom:5px; border-radius:5px; border-left: 4px solid ${r.isDueToday ? 'red' : '#5865F2'}; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <b>${r.content}</b><br>
+                        <small>${new Date(r.eventDate).toLocaleDateString('tr-TR')} (${r.daysLeft} gün kaldı)</small>
+                    </div>
+                    <button onclick="sil('${r.id}')" style="background: #d9534f; width: auto; padding: 5px 10px; margin: 0; font-size: 14px;">Sil</button>
                 </div>
             `).join('');
+        }
+
+        // YENİ EKLENEN SİLME FONKSİYONU
+        async function sil(id) {
+            if(!confirm("Bu hatırlatıcıyı silmek istediğine emin misin?")) return;
+
+            const res = await fetch(API_URL + "/api/reminder?id=" + id, {
+                method: 'DELETE'
+            });
+
+            if(res.ok) {
+                alert("Silindi!");
+                listele(); // Listeyi yenile
+            } else {
+                alert("Silinirken bir hata oluştu.");
+            }
         }
     </script>
 </body>
