@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hatırlatıcı Paneli</title>
+    <style>
+        body { font-family: sans-serif; background: #2c2f33; color: white; display: flex; justify-content: center; padding-top: 50px; }
+        .container { background: #23272a; padding: 20px; border-radius: 8px; width: 400px; }
+        input, button { width: 100%; padding: 10px; margin: 5px 0; border-radius: 5px; border: none; box-sizing: border-box; }
+        button { background: #5865F2; color: white; cursor: pointer; font-weight: bold; }
+        button:hover { background: #4752C4; }
+        .list { margin-top: 20px; border-top: 1px solid #444; padding-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Yeni Hatırlatıcı</h2>
+        
+        <label>API Key (Gizli Anahtarın)</label>
+        <input type="password" id="apiKey" placeholder="Örn: Reminder301">
+
+        <label>Konu</label>
+        <input type="text" id="content" placeholder="Örn: Matematik Sınavı">
+
+        <label>Tarih</label>
+        <input type="text" id="eventDate" placeholder="Örn: 4 kasim 2026">
+
+        <label>Kaç gün önce uyarılsın? (Virgülle ayır)</label>
+        <input type="text" id="remindDays" value="1, 5" placeholder="Örn: 1, 5">
+
+        <button onclick="ekle()">Hatırlatıcı Ekle</button>
+        <button onclick="listele()" style="background: #4CAF50;">Listeyi Gör</button>
+
+        <div class="list" id="sonuc"></div>
+    </div>
+
+    <script>
+        const API_URL = "https://reminder-api-psi.vercel.app";
+
+        async function ekle() {
+            const key = document.getElementById('apiKey').value;
+            const content = document.getElementById('content').value;
+            const eventDate = document.getElementById('eventDate').value;
+            const remindDays = document.getElementById('remindDays').value.split(',').map(n => parseInt(n.trim()));
+
+            const res = await fetch(API_URL + "/api/reminder", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-api-key': key },
+                body: JSON.stringify({ content, eventDate, remindDaysBefore: remindDays })
+            });
+
+            const data = await res.json();
+            if(res.ok) {
+                alert("Başarıyla eklendi!");
+                listele();
+            } else {
+                alert("Hata: " + (data.error || "Bilinmeyen hata"));
+            }
+        }
+
+        async function listele() {
+            const key = document.getElementById('apiKey').value;
+            const res = await fetch(API_URL + "/api/query", {
+                headers: { 'x-api-key': key }
+            });
+            const data = await res.json();
+            
+            const sonucDiv = document.getElementById('sonuc');
+            if(!res.ok) {
+                sonucDiv.innerHTML = "<p style='color:red'>Hata: Anahtar yanlış olabilir.</p>";
+                return;
+            }
+
+            if(data.length === 0) {
+                sonucDiv.innerHTML = "<p>Henüz hatırlatıcı yok.</p>";
+                return;
+            }
+
+            sonucDiv.innerHTML = data.map(r => `
+                <div style="background:#333; padding:10px; margin-bottom:5px; border-radius:5px; border-left: 4px solid ${r.isDueToday ? 'red' : '#5865F2'}">
+                    <b>${r.content}</b><br>
+                    <small>${new Date(r.eventDate).toLocaleDateString('tr-TR')} (${r.daysLeft} gün kaldı)</small>
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html>
